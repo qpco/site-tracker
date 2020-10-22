@@ -1,0 +1,15 @@
+{
+    "manifest_version": 2,
+    "name": "Site Tracker",
+    "version": "1.0",
+
+    "description": "Track and display browsing history.",
+
+    "background": {
+        "scripts": ["site-tracker.js"]
+    },
+    "permissions": [
+        "activeTab",
+        "tabs"
+    ]
+}
