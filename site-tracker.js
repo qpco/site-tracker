@@ -1,66 +1,56 @@
+function checkInstalled() {
+    console.log("extension installed successfully!");
+    if(!browser.tabs.onUpdated.hasListener(tabSwitch)) {
+        console.log("listener created for tab switching");
+        browser.tabs.onUpdated.addListener(tabSwitch);
+    }
+}
 
-browser.tabs.onActivated.addListener(tabSwitch);
-let _gHandle;
-let _gTime;
-let _gDomain;
+currentDomain = {
+    name: " ",
+    time: 0
+}
 
 // get new domain name, call urlCheck
 async function tabSwitch() {
-    clearInterval(_gHandle);
-    let siteMap = new Map();
-    if(_gTime != undefined) {
-        siteMap.set(domain, {time: _gTime});
-        browser.storage.local.set({stored_sites: siteMap}); // update time
-        console.log(domain + "  " + siteMap.get(domain));
+    //console.log("tab switch");
+    if(currentDomain.name != " ") { // update previous domain time
+        localStorage.setItem(currentDomain.name, currentDomain.time);
+        let time = localStorage.getItem(currentDomain.name);
+        console.log(time + " added to " + currentDomain.name);
     }
-    //console.log("test");
-    _gDomain = " "; // reset for new site
-    _gTime = 0; 
-    console.log("tab switch");
-    let tab = await browser.tabs.query({currentWindow: true, active: true});
-    let url = tab[0].url;
-    //console.log(url);
-
-    let domainName = url.substring(0, (url.indexOf(".com")+4));
-    _gDomain = domainName;
-    console.log(domainName);
-    urlCheck(domainName);
+    setTimeout(() => {}, 5000);
+    browser.tabs.query({currentWindow: true, active: true}, ([currentTab]) => {
+        const url = new URL(currentTab.url);
+        const domainName = url.hostname;
+        currentDomain.name = domainName;
+        currentDomain.time = 0;
+        urlCheck(domainName);  
+        console.log("domain name = " + domainName);
+    })
 }
 
-// call checkStoredSettings for domain name info, increment time
+//
 async function urlCheck(domainName) {
-    //console.log("urlCheck");
-    _gTime = await checkStoredSettings(domainName);
-    console.log(_gTime);
-    _gHandle = setInterval(() => { 
-        console.log(domainName + " @ " + _gTime);
-        _gTime += 15; 
-    }, 15000);
+    console.log(domainName);
+    console.log(localStorage.getItem(domainName));
+    if(localStorage.getItem(domainName) == undefined || localStorage.getItem(domainName) == 0) { // problem
+        console.log("new domain visited");
+        localStorage.setItem(domainName, 0);
+    }
+    currentDomain.time = localStorage.getItem(domainName);
+    let leave = false;
+    browser.tabs.onUpdated.addListener(() => {
+        leave = true;
+    });
+    let iID = setInterval(() => {
+        //console.log(domainName + " @ " + currentDomain.time);
+        if(leave == true) {
+            //console.log("leaving tab");
+            clearInterval(iID);
+        }
+        currentDomain.time = parseInt(currentDomain.time) + 1;
+    }, 1000);
 }
 
-
-
-// if map contains domainName key, get domain time. else add domain to map w/ time of 0
-async function checkStoredSettings(domainName) {
-    //console.log("checkStoredSettings");
-    let getItem = await browser.storage.local.get();
-    let storedSites = getItem.stored_sites;
-    //console.log("boop");
-    if(storedSites == undefined) {
-        console.log("new domain");
-        storedSites = new Map();
-        storedSites.set(domainName, {time: 0});
-        console.log(storedSites);
-        browser.storage.local.set({stored_sites: storedSites});
-    }
-    let time = 0;
-    if(storedSites.has(domainName)) {
-        console.log("increment time");
-        time = storedSites.get(domainName);
-    } else {
-        console.log("add new domain");
-        storedSites.set(domainName, {time: 0}); // add new domain to map
-        browser.storage.local.set({stored_sites: storedSites});
-    }
-    return time;
-}
+browser.runtime.onInstalled.addListener(checkInstalled);
