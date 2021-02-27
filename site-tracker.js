@@ -1,5 +1,4 @@
 function checkInstalled() {
-    browser.browserAction.onClicked.addListener(openPage)
     console.log("extension installed successfully!");
     if(!browser.tabs.onUpdated.hasListener(tabSwitch)) {
         console.log("listener created for tab switching");
@@ -10,42 +9,6 @@ function checkInstalled() {
 currentDomain = {
     name: " ",
     time: 0
-}
-
-function allStorage() {
-    let archive = {},
-        keys = Object.keys(localStorage),
-        i = keys.length;
-    while ( i-- ) {
-        archive[ keys[i] ] = localStorage.getItem( keys[i] );
-    }
-    return archive;
-}
-
-// get domain info from local storage and send to html doc
-function openPage() {
-    let domainTime = allStorage();
-    //let degrees = [];
-    let totalTime;
-    let domainLabels = [];
-    let times = [];
-
-    // domains
-    let i = 0;
-    Object.keys(domainTime).forEach(key => {
-        domainLabels[i] = key;
-        if(domainTime[key] == undefined) {
-            return;
-        }
-        times[i] = domainTime[key];
-        totalTime =+ parseInt(times[i]);
-        i++;
-    })
-    //console.log(totalTime);
-
-    chrome.tabs.create({
-        url: chrome.runtime.getURL("site-tracker.html")
-    });
 }
 
 // get new domain name, call urlCheck
@@ -63,7 +26,10 @@ function tabSwitch() {
             if(domainName == "") {
                clearInterval(iID); 
                return;
-            } else if(!domainName.startsWith("www") || !domainName.endsWith("com")) {
+            } else if(domainName.substr(-4) != ".com"
+                && domainName.substr(-4) != ".org"
+                && domainName.substr(-4) != ".gov"
+                && domainName.substr(-4) != ".edu") {
                 console.log("domain ignored: " + domainName);
                 clearInterval(iID); 
                 return;
